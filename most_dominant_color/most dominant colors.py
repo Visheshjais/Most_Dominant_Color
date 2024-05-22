@@ -4,24 +4,35 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 import imutils
+from webcolors import rgb_to_name, CSS3_HEX_TO_NAMES
+
+def get_color_name(rgb_tuple):
+    min_colors = {}
+    for key, name in CSS3_HEX_TO_NAMES.items():
+        r_c, g_c, b_c = hex_to_rgb(key)
+        rd = (r_c - rgb_tuple[0]) ** 2
+        gd = (g_c - rgb_tuple[1]) ** 2
+        bd = (b_c - rgb_tuple[2]) ** 2
+        min_colors[(rd + gd + bd)] = name
+    return min_colors[min(min_colors.keys())]
+
+def hex_to_rgb(hex):
+    hex = hex.lstrip('#')
+    hlen = len(hex)
+    return tuple(int(hex[i:i+hlen//3], 16) for i in range(0, hlen, hlen//3))
 
 clusters = 5 # try changing it
 
 input_path = 'C:\\Local disk D\\most_dominant_color\\input_images\\IMG_3.jpg'
 img = cv2.imread(input_path)
 org_img = img.copy()
-print('Org image shape --> ',img.shape)
-
-# rows = 200
-# cols = int((img.shape[0]/img.shape[1])*rows)
+print('Org image shape --> ', img.shape)
 
 img = imutils.resize(img, height=200)
-
-# img = cv2.resize(img,dsize=(rows,cols),interpolation=cv2.INTER_LINEAR)
-print('After resizing shape --> ',img.shape)
+print('After resizing shape --> ', img.shape)
 
 flat_img = np.reshape(img, (-1, 3))
-print('After Flattening shape --> ',flat_img.shape)
+print('After Flattening shape --> ', flat_img.shape)
 
 kmeans = KMeans(n_clusters=clusters, random_state=0)
 kmeans.fit(flat_img)
@@ -32,16 +43,19 @@ percentages = (np.unique(kmeans.labels_, return_counts=True)[1]) / flat_img.shap
 p_and_c = zip(percentages, dominant_colors)
 p_and_c = sorted(p_and_c, reverse=True)
 
+# Display color blocks with percentages and names
 block = np.ones((50, 50, 3), dtype='uint')
 plt.figure(figsize=(12, 8))
 for i in range(clusters):
     plt.subplot(1, clusters, i + 1)
-    block[:] = p_and_c[i][1][::-1]  # we have done this to convert bgr(opencv) to rgb(matplotlib) 
+    block[:] = p_and_c[i][1][::-1]  # convert BGR to RGB
     plt.imshow(block)
     plt.xticks([])
     plt.yticks([])
-    plt.xlabel(str(round(p_and_c[i][0] * 100, 2)) + '%')
+    color_name = get_color_name(p_and_c[i][1][::-1])
+    plt.xlabel(f"{color_name}\n{round(p_and_c[i][0] * 100, 2)}%")
 
+# Display bar chart
 bar = np.ones((50, 500, 3), dtype='uint')
 plt.figure(figsize=(12, 8))
 plt.title('Proportions of colors in the image')
